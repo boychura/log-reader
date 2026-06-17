@@ -4,20 +4,20 @@ import { LogInputPanel } from './components/LogInputPanel';
 import { LogToolbar } from './components/LogToolbar';
 import { LogViewer } from './components/LogViewer';
 import { parseLogLines } from './lib/parser';
-import { applyFilters, ALL_KNOWN_FILTERS, toggleActiveFilter } from './lib/filter';
+import { applyFilters, toggleActiveFilter, type ActiveFilters } from './lib/filter';
 import { joinVisibleLines } from './lib/copy';
-import type { LogEntry, KnownLogType } from './types/log';
+import { FILTER_ORDER } from './constants/logTypes';
+import type { LogEntry, LogType } from './types/log';
+import { parseHash, buildHash } from './lib/hash';
 
 type CopyStatus = 'idle' | 'copied' | 'failed';
 
 export function App() {
   const [isInputPanelOpen, setIsInputPanelOpen] = useState(false);
   const [entries, setEntries] = useState<LogEntry[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  // AC-10: six filter chips, all active by default. AC-9's search input
-  // is layered on top by applyFilters; chips narrow the visible set by
-  // tag without renumbering lines.
-  const [activeFilters, setActiveFilters] = useState(() => ALL_KNOWN_FILTERS);
+  const initialHash = useMemo(() => parseHash(window.location.hash), []);
+  const [searchQuery, setSearchQuery] = useState(initialHash.search);
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>(() => initialHash.filters);
   // AC-11: textarea text is owned here (lifted state) so the Clear
   // button can empty the input panel along with the viewer. The
   // `resetSignal` is bumped on Clear to wipe the input panel's
@@ -35,7 +35,7 @@ export function App() {
     setEntries(parseLogLines(text));
   };
 
-  const handleToggleFilter = useCallback((tag: KnownLogType) => {
+  const handleToggleFilter = useCallback((tag: LogType) => {
     setActiveFilters((prev) => toggleActiveFilter(prev, tag));
   }, []);
 
@@ -59,6 +59,37 @@ export function App() {
     [entries, searchQuery, activeFilters],
   );
 
+
+  // Sync filters/search to URL hash
+  useEffect(() => {
+    const hash = buildHash(searchQuery, activeFilters);
+    if (hash) {
+      window.history.replaceState(null, '', hash);
+    } else {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [searchQuery, activeFilters]);
+
+  // Listen for back/forward navigation
+  useEffect(() => {
+    const onHashChange = () => {
+      const { search, filters } = parseHash(window.location.hash);
+      setSearchQuery(search);
+      setActiveFilters(filters);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // Tag counts for filter chip badges
+  const tagCounts = useMemo(() => {
+    const counts = new Map<LogType, number>();
+    for (const tag of FILTER_ORDER) counts.set(tag, 0);
+    for (const entry of entries) {
+      counts.set(entry.tag, (counts.get(entry.tag) ?? 0) + 1);
+    }
+    return counts;
+  }, [entries]);
 
   // AC-12: "Copy visible logs". Sends the post-search, post-filter
   // rows (joined by '\n', original text preserved — see
@@ -185,6 +216,7 @@ export function App() {
               visibleCount={visibleEntries.length}
               totalCount={entries.length}
               activeFilters={activeFilters}
+              tagCounts={tagCounts}
               onToggleFilter={handleToggleFilter}
               onClear={handleClearLogs}
               onCopy={handleCopyVisible}
@@ -197,6 +229,20 @@ export function App() {
           <EmptyState />
         )}
       </main>
+
+      <footer className="app-footer">
+        <a
+          href="https://x.com/000phah"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Follow on X (Twitter)"
+          className="app-footer__x-link"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        </a>
+      </footer>
     </div>
   );
 }

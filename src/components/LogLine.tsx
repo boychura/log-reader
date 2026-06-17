@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { LogEntry } from '../types/log';
 import { TAG_LABEL } from '../constants/logTypes';
 
@@ -5,31 +6,30 @@ export interface LogLineProps {
   entry: LogEntry;
 }
 
-/**
- * Single log row.
- *
- * - AC-3 / AC-8: renders the line index in a fixed-width gutter and the raw
- *   line text.
- * - AC-6: when `entry.tag` is a known log type, the wrapper picks up a
- *   per-tag modifier class (`.log-line--{tag}`) that applies the matching
- *   tinted background, and a colored `.log-tag` chip is rendered with the
- *   canonical `[tag]` label.
- * - AC-7: when `entry.tag === 'unknown'` the chip is omitted and the wrapper
- *   carries no `.log-line--*` modifier, so the line renders as a plain
- *   monospaced row with no background tint — exactly the same look as any
- *   other line minus the highlight.
- *
- * Markup is kept stable across ACs so styling can layer on without
- * restructuring (sticky-gutter + word-break refinements land in AC-13).
- */
 export function LogLine({ entry }: LogLineProps) {
+  const [copied, setCopied] = useState(false);
   const isKnownTag = entry.tag !== 'unknown';
   const lineClassName = isKnownTag
     ? `log-line log-line--${entry.tag}`
     : 'log-line';
 
+  const handleClick = async () => {
+    try {
+      await navigator.clipboard.writeText(entry.rawText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // silently fail
+    }
+  };
+
   return (
-    <div className={lineClassName} data-line-index={entry.index}>
+    <div
+      className={`${lineClassName}${copied ? ' log-line--copied' : ''}`}
+      data-line-index={entry.index}
+      onClick={handleClick}
+      title="Click to copy line"
+    >
       <span className="log-line__gutter">{entry.index}</span>
       {isKnownTag ? (
         <span
@@ -40,6 +40,7 @@ export function LogLine({ entry }: LogLineProps) {
         </span>
       ) : null}
       <span className="log-line__content">{entry.rawText}</span>
+      {copied && <span className="log-line__copied-badge">Copied!</span>}
     </div>
   );
 }

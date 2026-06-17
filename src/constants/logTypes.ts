@@ -1,4 +1,5 @@
 import type { LogType, KnownLogType } from '../types/log';
+export type { LogType };
 
 export const KNOWN_TAGS: ReadonlySet<KnownLogType> = new Set<KnownLogType>([
   'error',
@@ -18,6 +19,11 @@ export const LOG_TYPE_ORDER: readonly KnownLogType[] = [
   'critical',
 ];
 
+export const FILTER_ORDER: readonly LogType[] = [
+  ...LOG_TYPE_ORDER,
+  'unknown',
+];
+
 export const TAG_LABEL: Record<LogType, string> = {
   error: '[error]',
   warning: '[warning]',
@@ -25,5 +31,5 @@ export const TAG_LABEL: Record<LogType, string> = {
   debug: '[debug]',
   success: '[success]',
   critical: '[critical]',
-  unknown: '',
+  unknown: '[plain]',
 };

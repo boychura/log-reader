@@ -7,7 +7,7 @@ import {
   type ActiveFilters,
 } from './filter';
 import { parseLogLines } from './parser';
-import type { LogEntry, KnownLogType } from '../types/log';
+import type { LogEntry, LogType } from '../types/log';
 
 // Active set that includes 'unknown' so tests can exercise the unknown-tag
 // path. (The default UI active set is the six known tags only — see
@@ -25,7 +25,7 @@ const allTagsIncludingUnknown = (): Set<LogEntry['tag']> =>
   ]);
 
 const allKnown = (): Set<LogEntry['tag']> =>
-  new Set<LogEntry['tag']>(['error', 'warning', 'info', 'debug', 'success', 'critical']);
+  new Set<LogEntry['tag']>(['error', 'warning', 'info', 'debug', 'success', 'critical', 'unknown']);
 
 describe('applyFilters - AC-9 search filtering', () => {
   describe('case-insensitive substring match', () => {
@@ -162,17 +162,10 @@ describe('applyFilters - AC-9 search filtering', () => {
       expect(applyFilters(sample, 'one', new Set())).toEqual([]);
     });
 
-    it('still passes unknown rows through even with an empty active set', () => {
-      // Unknown rows have no chip in AC-10, so they must NOT be dropped
-      // when every chip is deactivated. They only get filtered out by
-      // the search query (since search is the only way to hide them).
+    it('filters out unknown rows when unknown is not in the active set', () => {
       const sample = parseLogLines('[info] one\nplain two\n[error] three');
-      expect(applyFilters(sample, '', new Set())).toEqual([
-        expect.objectContaining({ index: 2, tag: 'unknown' }),
-      ]);
-      expect(applyFilters(sample, 'two', new Set())).toEqual([
-        expect.objectContaining({ index: 2, tag: 'unknown' }),
-      ]);
+      expect(applyFilters(sample, '', new Set())).toEqual([]);
+      expect(applyFilters(sample, 'two', new Set())).toEqual([]);
     });
   });
 
@@ -189,38 +182,32 @@ describe('applyFilters - AC-9 search filtering', () => {
       ].join('\n'),
     );
 
-    it('with empty query, filters by tag only (unknown row still passes)', () => {
+    it('with empty query, filters by tag only (unknown excluded when not in set)', () => {
       const visible = applyFilters(sample, '', new Set(['error'] as const));
-      // Row 7 ('plain eta') has tag 'unknown' which always passes the
-      // tag check, regardless of the active set.
-      expect(visible.map((e) => e.index)).toEqual([1, 7]);
+      expect(visible.map((e) => e.index)).toEqual([1]);
     });
 
-    it('with non-empty query, requires BOTH tag and substring match (unknown row still passes)', () => {
+    it('with non-empty query, requires BOTH tag and substring match', () => {
       const visible = applyFilters(
         sample,
         'a',
         new Set(['error', 'warning', 'info'] as const),
       );
       // 'a' matches: 1 'alpha', 2 'beta', 3 'gamma', 7 'plain eta'.
-      // Of those, 1/2/3 pass the tag filter and 7 always passes (unknown).
-      expect(visible.map((e) => e.index)).toEqual([1, 2, 3, 7]);
+      // Of those, only 1/2/3 pass the tag filter (unknown not in set).
+      expect(visible.map((e) => e.index)).toEqual([1, 2, 3]);
     });
 
-    it('multi-tag active set is OR, not AND (unknown row still passes)', () => {
+    it('multi-tag active set is OR, not AND', () => {
       const visible = applyFilters(
         sample,
         '',
         new Set(['error', 'success'] as const),
       );
-      expect(visible.map((e) => e.index)).toEqual([1, 5, 7]);
+      expect(visible.map((e) => e.index)).toEqual([1, 5]);
     });
 
-    it('unknown lines pass through when only known tags are active (AC-7 invariant)', () => {
-      // Plain / untagged lines have tag='unknown' and there is no AC-10
-      // filter chip for 'unknown'. The active-set check must therefore
-      // let them through so AC-3 (every line appears) and AC-7
-      // (unknown lines render as plain log lines) keep working.
+    it('unknown lines pass through when unknown is in the active set', () => {
       const visible = applyFilters(sample, '', allKnown());
       expect(visible.map((e) => e.index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
       expect(visible).toHaveLength(7);
@@ -248,14 +235,14 @@ describe('applyFilters - AC-9 search filtering', () => {
   });
 
   describe('ALL_KNOWN_FILTERS / makeActiveFilters', () => {
-    it('ALL_KNOWN_FILTERS contains exactly the six documented tags', () => {
+    it('ALL_KNOWN_FILTERS contains all seven tags including unknown', () => {
       expect([...ALL_KNOWN_FILTERS].sort()).toEqual(
-        (['critical', 'debug', 'error', 'info', 'success', 'warning'] as KnownLogType[]).sort(),
+        (['critical', 'debug', 'error', 'info', 'success', 'unknown', 'warning'] as LogType[]).sort(),
       );
     });
 
-    it('ALL_KNOWN_FILTERS does NOT include unknown', () => {
-      expect(ALL_KNOWN_FILTERS.has('unknown')).toBe(false);
+    it('ALL_KNOWN_FILTERS includes unknown', () => {
+      expect(ALL_KNOWN_FILTERS.has('unknown')).toBe(true);
     });
 
     it('makeActiveFilters drops unknown tags', () => {
@@ -317,11 +304,10 @@ describe('applyFilters - AC-9 search filtering', () => {
       expect(before.size).toBe(6);
     });
 
-    it('refuses to toggle the unknown tag (no chip in the UI)', () => {
+    it('can toggle the unknown tag', () => {
       const before = allTagsIncludingUnknown();
-      expect(() =>
-        toggleActiveFilter(before, 'unknown' as KnownLogType),
-      ).toThrow(/not a known log type/);
+      const after = toggleActiveFilter(before, 'unknown');
+      expect(after.has('unknown')).toBe(false);
     });
 
     it('round-trips: toggling a tag on then off restores the original set', () => {
@@ -331,28 +317,17 @@ describe('applyFilters - AC-9 search filtering', () => {
       expect([...back].sort()).toEqual([...before].sort());
     });
 
-    it('toggling off every chip lets unknown rows still pass through applyFilters', () => {
-      // AC-10 invariant: with every chip deactivated, known-tagged rows
-      // disappear but unknown-tagged rows remain visible (search is the
-      // only way to hide them).
+    it('toggling off all chips hides all rows', () => {
       const sample = parseLogLines(
         ['[error] one', 'plain two', '[warning] three'].join('\n'),
       );
-      let active: ActiveFilters = new Set([
-        'error',
-        'warning',
-        'info',
-        'debug',
-        'success',
-        'critical',
-      ]);
-      // Toggle every chip off, one by one.
-      for (const tag of ['warning', 'info', 'debug', 'success', 'critical', 'error'] as const) {
+      let active: ActiveFilters = ALL_KNOWN_FILTERS;
+      for (const tag of ['warning', 'info', 'debug', 'success', 'critical', 'error', 'unknown'] as const) {
         active = toggleActiveFilter(active, tag);
       }
       expect([...active]).toEqual([]);
       const visible = applyFilters(sample, '', active);
-      expect(visible.map((e) => e.index)).toEqual([2]);
+      expect(visible.map((e) => e.index)).toEqual([]);
     });
   });
 });

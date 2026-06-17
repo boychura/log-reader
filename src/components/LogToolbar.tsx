@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
-import type { KnownLogType } from '../types/log';
-import { LOG_TYPE_ORDER, TAG_LABEL } from '../constants/logTypes';
+import type { LogType } from '../types/log';
+import { FILTER_ORDER, TAG_LABEL } from '../constants/logTypes';
 import type { ActiveFilters } from '../lib/filter';
 
 export interface LogToolbarProps {
@@ -19,11 +19,13 @@ export interface LogToolbarProps {
    * unknown rows always pass through and have no chip.
    */
   activeFilters: ActiveFilters;
+  /** Per-tag line counts for badge display. */
+  tagCounts: Map<LogType, number>;
   /**
    * Called when the user toggles a single chip. The parent is expected
    * to update `activeFilters` (typically via `toggleActiveFilter`).
    */
-  onToggleFilter: (tag: KnownLogType) => void;
+  onToggleFilter: (tag: LogType) => void;
   /**
    * Called when the user clicks "Clear logs" (AC-11). The parent is
    * expected to wipe the loaded entries AND the textarea so the app
@@ -71,6 +73,7 @@ export function LogToolbar({
   visibleCount,
   totalCount,
   activeFilters,
+  tagCounts,
   onToggleFilter,
   onClear,
   onCopy,
@@ -153,9 +156,10 @@ export function LogToolbar({
         role="group"
         aria-label="Filter by log type"
       >
-        {LOG_TYPE_ORDER.map((tag) => {
+        {FILTER_ORDER.map((tag) => {
           const active = activeFilters.has(tag);
           const label = TAG_LABEL[tag] || tag;
+          const count = tagCounts.get(tag) ?? 0;
           return (
             <button
               key={tag}
@@ -172,6 +176,9 @@ export function LogToolbar({
               }
             >
               {label}
+              {count > 0 && (
+                <span className="filter-chip__count">{count}</span>
+              )}
             </button>
           );
         })}

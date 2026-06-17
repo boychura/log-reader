@@ -58,8 +58,8 @@ describe('logTypes constants', () => {
       expect(TAG_LABEL[tag]).toBe(`[${tag}]`);
     });
 
-    it('returns an empty string for the unknown sentinel', () => {
-      expect(TAG_LABEL['unknown' satisfies LogType]).toBe('');
+    it('returns [plain] for the unknown sentinel', () => {
+      expect(TAG_LABEL['unknown' satisfies LogType]).toBe('[plain]');
     });
 
     it('has a label for every LogType member', () => {

@@ -25,23 +25,20 @@
  *   hide everything must filter `[]` upstream.
  */
 import type { LogEntry, LogType, KnownLogType } from '../types/log';
-import { KNOWN_TAGS, LOG_TYPE_ORDER } from '../constants/logTypes';
+import { KNOWN_TAGS, FILTER_ORDER } from '../constants/logTypes';
 
 export type ActiveFilters = ReadonlySet<LogType>;
 
 /**
- * A filter set that lets every known log type through. Convenience export
- * for callers (AC-9 default, AC-10 reset, etc.).
+ * A filter set that lets every log type through (including unknown/plain).
  */
-export const ALL_KNOWN_FILTERS: ActiveFilters = new Set<LogType>(
-  LOG_TYPE_ORDER as readonly KnownLogType[],
-);
+export const ALL_KNOWN_FILTERS: ActiveFilters = new Set<LogType>(FILTER_ORDER);
 
-/** Build an ActiveFilters set from a list of tags; unknown tags are ignored. */
+/** Build an ActiveFilters set from a list of tags. */
 export function makeActiveFilters(tags: readonly LogType[]): ActiveFilters {
   const next = new Set<LogType>();
   for (const tag of tags) {
-    if (KNOWN_TAGS.has(tag as KnownLogType)) {
+    if (KNOWN_TAGS.has(tag as KnownLogType) || tag === 'unknown') {
       next.add(tag);
     }
   }
@@ -62,13 +59,8 @@ export function makeActiveFilters(tags: readonly LogType[]): ActiveFilters {
  */
 export function toggleActiveFilter(
   active: ActiveFilters,
-  tag: KnownLogType,
+  tag: LogType,
 ): ActiveFilters {
-  if (!KNOWN_TAGS.has(tag)) {
-    throw new Error(
-      `toggleActiveFilter: '${tag}' is not a known log type (refusing to toggle)`,
-    );
-  }
   const next = new Set<LogType>(active);
   if (next.has(tag)) {
     next.delete(tag);
@@ -100,8 +92,7 @@ export function applyFilters(
 ): LogEntry[] {
   const q = query.trim().toLowerCase();
   if (entries.length === 0) return [];
-  const matchesTag = (e: LogEntry): boolean =>
-    e.tag === 'unknown' || active.has(e.tag);
+  const matchesTag = (e: LogEntry): boolean => active.has(e.tag);
   if (q === '') {
     // No search predicate; pure tag filter (unknown rows always pass).
     return entries.filter(matchesTag);

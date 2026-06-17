@@ -62,8 +62,8 @@ export function EmptyState() {
         Paste logs or upload a file to begin.
       </p>
       <p className="empty-state__hint">
-        Open the <strong>Input</strong> panel above to paste text or drop a
-        <code> .log</code> / <code>.txt</code> file.
+        Open the <strong>Input</strong> panel above to paste text or
+        drop a <code style={{ display: 'inline-block' }}>.log</code> / <code style={{ display: 'inline-block' }}>.txt</code> file.
       </p>
     </div>
   );
