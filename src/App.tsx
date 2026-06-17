@@ -176,7 +176,7 @@ export function App() {
         )}
       </section>
 
-      <main className="viewer-area" aria-label="Log viewer">
+      <main className={`viewer-area${hasLogs ? ' viewer-area--has-logs' : ''}`} aria-label="Log viewer">
         {hasLogs ? (
           <>
             <LogToolbar

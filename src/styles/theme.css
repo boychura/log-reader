@@ -1,40 +1,40 @@
-/* Dark-mode palette + per-log-type color tokens.
-   Full token set is declared up front so subsequent ACs (color chips,
-   tinted backgrounds) can consume them without rework. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* Surfaces */
-  --bg-app: #0f1115;
-  --bg-panel: #161922;
-  --bg-panel-2: #1d2230;
-  --border: #2a2f3d;
+  --bg-app: #FFFFFF;
+  --bg-panel: #F5F5F5;
+  --bg-panel-2: #EBEBEB;
+  --border: #000000;
+  --border-width: 3px;
 
   /* Foreground */
-  --fg: #e6e8ee;
-  --fg-dim: #9aa0a6;
-  --fg-muted: #6b7280;
+  --fg: #000000;
+  --fg-dim: #333333;
+  --fg-muted: #666666;
 
   /* Per-log-type foreground + tinted background */
-  --error: #ff5c5c;
-  --bg-error: rgba(255, 92, 92, 0.10);
+  --error: #D40000;
+  --bg-error: #FFE0E0;
 
-  --warning: #ffb454;
-  --bg-warning: rgba(255, 180, 84, 0.10);
+  --warning: #CC6600;
+  --bg-warning: #FFF0D6;
 
-  --info: #5aa9ff;
-  --bg-info: rgba(90, 169, 255, 0.10);
+  --info: #0044CC;
+  --bg-info: #E0EDFF;
 
-  --debug: #9aa0a6;
-  --bg-debug: rgba(154, 160, 166, 0.08);
+  --debug: #555555;
+  --bg-debug: #F0F0F0;
 
-  --success: #5cd6a3;
-  --bg-success: rgba(92, 214, 163, 0.10);
+  --success: #007A2E;
+  --bg-success: #DDFAE8;
 
-  --critical: #a445ff;
-  --bg-critical: rgba(164, 69, 255, 0.12);
+  --critical: #7700CC;
+  --bg-critical: #F3E5FF;
 
-  /* Monospaced font stack (kept here so AC-13 can import it from one place) */
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Typography */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
