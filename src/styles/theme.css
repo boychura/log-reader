@@ -1,0 +1,40 @@
+/* Dark-mode palette + per-log-type color tokens.
+   Full token set is declared up front so subsequent ACs (color chips,
+   tinted backgrounds) can consume them without rework. */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-app: #0f1115;
+  --bg-panel: #161922;
+  --bg-panel-2: #1d2230;
+  --border: #2a2f3d;
+
+  /* Foreground */
+  --fg: #e6e8ee;
+  --fg-dim: #9aa0a6;
+  --fg-muted: #6b7280;
+
+  /* Per-log-type foreground + tinted background */
+  --error: #ff5c5c;
+  --bg-error: rgba(255, 92, 92, 0.10);
+
+  --warning: #ffb454;
+  --bg-warning: rgba(255, 180, 84, 0.10);
+
+  --info: #5aa9ff;
+  --bg-info: rgba(90, 169, 255, 0.10);
+
+  --debug: #9aa0a6;
+  --bg-debug: rgba(154, 160, 166, 0.08);
+
+  --success: #5cd6a3;
+  --bg-success: rgba(92, 214, 163, 0.10);
+
+  --critical: #a445ff;
+  --bg-critical: rgba(164, 69, 255, 0.12);
+
+  /* Monospaced font stack (kept here so AC-13 can import it from one place) */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

@@ -1,0 +1,8 @@
+[info] Application starting up
+[debug] Loaded config from /etc/app/config.yaml
+[warning] Deprecated flag --legacy-mode; will be removed in v3.0
+[error] Database connection refused: ECONNREFUSED 10.0.0.5:5432
+
+[info] Retrying in 5 seconds...
+[success] Database connection established
+[critical] Memory usage above 95%; restarting worker pool
